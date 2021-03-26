@@ -1,10 +1,10 @@
 
-# <application_license_badge>
+# License
 <!--- [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE) --->
 
-# BC Gov Terraform Template
+# SEA Organization Info Module ***Extended Remix Edition*** 
 
-This repo provides a starting point for users who want to create valid Terraform modules stored in GitHub.  
+This repo provides a way to easily extract information about the accounts within an AWS Organzation that follows the SEA conventions.   
 
 ## Third-Party Products/Libraries used and the licenses they are covered by
 <!--- product/library and path to the LICENSE --->
@@ -15,10 +15,36 @@ This repo provides a starting point for users who want to create valid Terraform
 - [ ] Production/Maintenance
 
 ## Documentation
-<!--- Point to another readme or create a GitHub Pages (https://guides.github.com/features/pages/) --->
+You're looking at it!
+
+This module is likely to be most useful - at least in its current state - as a standalone command-line "query" utility, rather than something to be used by other Terraform configuration.  This is becuase it is slow and also creates local resrouces so may "pollute" other state files.    
 
 ## Getting Started
-<!--- setup env vars, secrets, instructions... --->
+
+- acquire/set a suitable AWS credential in your shell (or use `AWS_PROFILE` beofre `terraform` commands) that can read account organizations and tags.
+- on the first use, run `terraform init`
+- check setup via `terraform plan`
+- generate the account data via `terraform apply`
+
+Following `apply`, the account data is available as a Terraform `output` called "workload_accounts" (for basic compatiblity with the closely-related module at `bcdevops/terraform-aws-sea-organization-info`).  It can be viewed using `terraform output -json workload_accounts`.
+
+### Creating a CSV report of accounts
+
+The output can be massaged into a csv form using:
+
+```shell
+terraform output -json workload_accounts | jq -r '(map(keys) | add | unique) as $cols | map(. as $row | $cols | map($row[.])) as $rows | $cols, $rows[] | @csv' > accounts_info.csv
+```
+
+### Creating an input file for the billing utility
+
+An input file in a form usable with our billing report utility can be created using the following:
+
+```shell
+terraform output -json billing_report_input > billing_report_input.json 
+```
+
+The contents of `billing_report_input.json` can be provided to the billing utility and it will create corresponding reports.
 
 ## Getting Help or Reporting an Issue
 <!--- Example below, modify accordingly --->
@@ -34,7 +60,6 @@ By participating in this project you agree to abide by its terms.
 
 
 ## License
-<!--- Example below, modify accordingly --->
     Copyright 2018 Province of British Columbia
 
     Licensed under the Apache License, Version 2.0 (the "License");

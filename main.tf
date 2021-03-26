@@ -16,9 +16,34 @@ module "lz_info" {
 }
 
 module "account_tags" {
-	for_each = toset([for account in module.lz_info.workload_accounts : account.id ])
+	for_each = toset([for account in module.lz_info.workload_accounts : account.id])
 
-	source            = "digitickets/cli/aws"
+	source = "digitickets/cli/aws"
 	role_session_name = "account_tags_query"
-	aws_cli_commands  = ["organizations", "list-tags-for-resource", "--resource-id", each.value]
+	aws_cli_commands = [
+		"organizations",
+		"list-tags-for-resource",
+		"--resource-id",
+		each.value]
+}
+
+locals {
+
+	tagged_workload_accounts = [for account in module.lz_info.workload_accounts : merge(account, {for tag in module.account_tags[account.id].result["Tags"] :
+	tag["Key"] => tag["Value"]
+	})]
+
+	accounts_by_billing_group = {for account in local.tagged_workload_accounts : lookup(account, "billing_group", "NOGROUP") => account...}
+
+	billing_report_input = {
+		month: 2,
+		year: 2021,
+		teams: [for billing_group, accounts in local.accounts_by_billing_group : {
+			contact_name = accounts[0]["admin_contact_name"]
+			contact_email: accounts[0]["admin_contact_email"]
+			business_unit: accounts[0]["billing_group"],
+			accountIds: [for a in accounts : a["id"]
+			]
+		} if billing_group != "NOGROUP"]
+	}
 }
