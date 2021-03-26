@@ -36,8 +36,8 @@ locals {
 	accounts_by_billing_group = {for account in local.tagged_workload_accounts : lookup(account, "billing_group", "NOGROUP") => account...}
 
 	billing_report_input = {
-		month: 2,
-		year: 2021,
+		month: parseint(var.report_month != null ? var.report_month : formatdate("M", timestamp()), 10)
+		year: parseint(var.report_year != null ? var.report_year : formatdate("YYYY", timestamp()), 10)
 		teams: [for billing_group, accounts in local.accounts_by_billing_group : {
 			contact_name = accounts[0]["admin_contact_name"]
 			contact_email: accounts[0]["admin_contact_email"]
